@@ -217,6 +217,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 </div>
             </div>
         </aside>
+        </>
     );
 };
 
