@@ -110,7 +110,7 @@ const getInitials = (name) => {
 };
 
 /* ── Sidebar component ─────────────────────────────────── */
-const Sidebar = () => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
     const role = (user?.user_type || 'customer').toLowerCase();
@@ -122,8 +122,15 @@ const Sidebar = () => {
     };
 
     return (
-        <aside className="fixed left-0 top-0 h-screen w-60 bg-white border-r border-slate-100 flex flex-col z-50">
-            {/* Logo */}
+        <>
+            {/* Mobile overlay */}
+            <div 
+                className={`fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 transition-opacity duration-300 md:hidden ${isOpen ? 'opacity-100 block' : 'opacity-0 hidden'}`}
+                onClick={() => setIsOpen(false)}
+            />
+
+            <aside className={`fixed left-0 top-0 h-screen w-60 bg-white border-r border-slate-100 flex flex-col z-50 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300 ease-in-out`}>
+                {/* Logo */}
             <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
                     <Package className="text-white w-4 h-4" />
@@ -166,8 +173,9 @@ const Sidebar = () => {
                                     <li key={iIdx}>
                                         <NavLink
                                             to={item.path}
+                                            onClick={() => setIsOpen && setIsOpen(false)}
                                             className={({ isActive }) =>
-                                                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer w-full ${
+                                                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full ${
                                                     isActive
                                                         ? 'bg-indigo-50 text-indigo-700 border-l-2 border-indigo-600 rounded-l-none'
                                                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'

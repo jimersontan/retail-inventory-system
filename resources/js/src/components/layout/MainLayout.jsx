@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 
 const MainLayout = () => {
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const location = useLocation();
 
     // Generate title from route path for the TopBar
@@ -17,10 +18,10 @@ const MainLayout = () => {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <Sidebar />
-            <TopBar title={getTitleFromPath(location.pathname)} />
+            <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+            <TopBar title={getTitleFromPath(location.pathname)} setSidebarOpen={setIsSidebarOpen} />
             
-            <main className="ml-60 pt-[60px] min-h-screen">
+            <main className="md:ml-60 pt-[60px] min-h-screen transition-all duration-300">
                 <div className="p-8 h-full">
                     <Outlet />
                 </div>

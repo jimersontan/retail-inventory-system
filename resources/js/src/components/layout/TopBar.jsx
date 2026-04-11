@@ -1,8 +1,8 @@
 import React from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
-const TopBar = ({ title }) => {
+const TopBar = ({ title, setSidebarOpen }) => {
     const { user } = useAuthStore();
     
     // Derived state for notifications
@@ -26,10 +26,16 @@ const TopBar = ({ title }) => {
     const role = user?.user_type || 'customer';
 
     return (
-        <header className="fixed top-0 left-60 right-0 h-[60px] bg-white border-b border-slate-100 flex items-center justify-between px-8 z-40">
-            {/* Page Title */}
-            <div>
-                <h1 className="text-lg font-semibold text-slate-900">
+        <header className="fixed top-0 left-0 md:left-60 right-0 h-[60px] bg-white border-b border-slate-100 flex items-center justify-between px-4 md:px-8 z-30 transition-all duration-300">
+            {/* Page Title & Mobile Toggle */}
+            <div className="flex items-center gap-3">
+                <button 
+                    onClick={() => setSidebarOpen(true)}
+                    className="p-2 -ml-2 rounded-lg hover:bg-slate-100 text-slate-600 focus:outline-none md:hidden"
+                >
+                    <Menu className="w-5 h-5" />
+                </button>
+                <h1 className="text-lg font-semibold text-slate-900 truncate">
                     {title || 'Dashboard'}
                 </h1>
             </div>
