@@ -25,9 +25,6 @@ class CreateProfilesTable extends Migration
             $table->string('key_field')->nullable();
             $table->timestamps();
             $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade');
-            $table->foreign('employee_id')->references('employee_id')->on('employees')->onDelete('cascade');
-            $table->foreign('supplier_id')->references('customer_id')->on('customers')->onDelete('cascade');
-            $table->foreign('branch_id')->references('branch_id')->on('branches')->onDelete('set null');
         });
     }
 

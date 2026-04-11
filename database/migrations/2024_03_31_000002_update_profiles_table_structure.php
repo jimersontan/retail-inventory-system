@@ -20,26 +20,20 @@ class UpdateProfilesTableStructure extends Migration
                 ADD COLUMN IF NOT EXISTS zip VARCHAR(255) NULL AFTER gender,
                 ADD COLUMN IF NOT EXISTS key_field VARCHAR(255) NULL AFTER zip
             ");
-
-            // Add foreign key constraints
-            try {
-                DB::statement("ALTER TABLE profiles ADD CONSTRAINT fk_profiles_employee_id FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE CASCADE");
-            } catch (\Exception $e) {
-                // Foreign key might already exist
-            }
-
-            try {
-                DB::statement("ALTER TABLE profiles ADD CONSTRAINT fk_profiles_supplier_id FOREIGN KEY (supplier_id) REFERENCES customers(customer_id) ON DELETE CASCADE");
-            } catch (\Exception $e) {
-                // Foreign key might already exist
-            }
-
-            try {
-                DB::statement("ALTER TABLE profiles ADD CONSTRAINT fk_profiles_branch_id FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL");
-            } catch (\Exception $e) {
-                // Foreign key might already exist
-            }
         }
+
+        // Add foreign key constraints universally since the related tables exist now
+        try {
+            DB::statement("ALTER TABLE profiles ADD CONSTRAINT fk_profiles_employee_id FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE CASCADE");
+        } catch (\Exception $e) {}
+
+        try {
+            DB::statement("ALTER TABLE profiles ADD CONSTRAINT fk_profiles_supplier_id FOREIGN KEY (supplier_id) REFERENCES customers(customer_id) ON DELETE CASCADE");
+        } catch (\Exception $e) {}
+
+        try {
+            DB::statement("ALTER TABLE profiles ADD CONSTRAINT fk_profiles_branch_id FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL");
+        } catch (\Exception $e) {}
     }
 
     public function down()
