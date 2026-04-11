@@ -12,7 +12,7 @@ class CreatePaymentsTable extends Migration
             $table->id('payment_id');
             $table->unsignedBigInteger('order_id');
             $table->decimal('amount', 12, 2);
-            $table->enum('status', ['pending', 'completed', 'failed', 'refunded'])->default('pending');
+            $table->enum('status', ['pending', 'completed', 'paid', 'failed', 'refunded'])->default('pending');
             $table->dateTime('payment_date');
             $table->timestamps();
             $table->foreign('order_id')->references('order_id')->on('orders')->onDelete('cascade');

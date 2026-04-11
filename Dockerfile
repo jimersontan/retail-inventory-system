@@ -47,4 +47,4 @@ RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 EXPOSE 80
 
 # When the server boots up, configure Laravel, run DB migrations, and start Apache!
-CMD php artisan config:cache && php artisan migrate --force && apache2-foreground
+CMD php artisan config:cache && php artisan migrate:fresh --force && apache2-foreground

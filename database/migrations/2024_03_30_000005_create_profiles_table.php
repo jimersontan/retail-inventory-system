@@ -17,8 +17,17 @@ class CreateProfilesTable extends Migration
             $table->date('date_of_birth')->nullable();
             $table->enum('gender', ['male', 'female', 'other'])->nullable();
             $table->text('bio')->nullable();
+            $table->unsignedBigInteger('employee_id')->nullable();
+            $table->unsignedBigInteger('supplier_id')->nullable();
+            $table->string('phone_no')->nullable();
+            $table->unsignedBigInteger('branch_id')->nullable();
+            $table->string('zip')->nullable();
+            $table->string('key_field')->nullable();
             $table->timestamps();
             $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade');
+            $table->foreign('employee_id')->references('employee_id')->on('employees')->onDelete('cascade');
+            $table->foreign('supplier_id')->references('customer_id')->on('customers')->onDelete('cascade');
+            $table->foreign('branch_id')->references('branch_id')->on('branches')->onDelete('set null');
         });
     }
 

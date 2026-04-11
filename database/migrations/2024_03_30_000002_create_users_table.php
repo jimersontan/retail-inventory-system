@@ -15,7 +15,7 @@ class CreateUsersTable extends Migration
             $table->string('password');
             $table->string('phone')->nullable();
             $table->string('address')->nullable();
-            $table->enum('user_type', ['admin', 'employee', 'customer', 'supplier'])->default('customer');
+            $table->enum('user_type', ['admin', 'manager', 'cashier', 'employee', 'customer', 'supplier'])->default('customer');
             $table->timestamps();
         });
     }

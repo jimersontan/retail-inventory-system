@@ -14,12 +14,14 @@ class UpdateOrderAndPaymentStatusesEnum extends Migration
      */
     public function up()
     {
-        // Update orders status ENUM
-        DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'confirmed', 'processing', 'ready', 'completed', 'cancelled', 'shipped', 'delivered') NOT NULL DEFAULT 'pending'");
-        
-        // Update payments status ENUM
-        // Adding 'paid' as an alias for 'completed' to match UI terminology
-        DB::statement("ALTER TABLE payments MODIFY COLUMN status ENUM('pending', 'completed', 'paid', 'failed', 'refunded') NOT NULL DEFAULT 'pending'");
+        if (DB::connection()->getDriverName() === 'mysql') {
+            // Update orders status ENUM
+            DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'confirmed', 'processing', 'ready', 'completed', 'cancelled', 'shipped', 'delivered') NOT NULL DEFAULT 'pending'");
+            
+            // Update payments status ENUM
+            // Adding 'paid' as an alias for 'completed' to match UI terminology
+            DB::statement("ALTER TABLE payments MODIFY COLUMN status ENUM('pending', 'completed', 'paid', 'failed', 'refunded') NOT NULL DEFAULT 'pending'");
+        }
     }
 
     /**
@@ -29,9 +31,11 @@ class UpdateOrderAndPaymentStatusesEnum extends Migration
      */
     public function down()
     {
-        // Fallback to original ENUMs (Note: this might fail if new statuses are already in use)
-        // To be safe, we'll keep the new statuses but just revert the default if necessary
-        DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') NOT NULL DEFAULT 'pending'");
-        DB::statement("ALTER TABLE payments MODIFY COLUMN status ENUM('pending', 'completed', 'failed', 'refunded') NOT NULL DEFAULT 'pending'");
+        if (DB::connection()->getDriverName() === 'mysql') {
+            // Fallback to original ENUMs (Note: this might fail if new statuses are already in use)
+            // To be safe, we'll keep the new statuses but just revert the default if necessary
+            DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') NOT NULL DEFAULT 'pending'");
+            DB::statement("ALTER TABLE payments MODIFY COLUMN status ENUM('pending', 'completed', 'failed', 'refunded') NOT NULL DEFAULT 'pending'");
+        }
     }
 }
