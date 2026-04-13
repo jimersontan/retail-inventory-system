@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, AlertTriangle, Clock, MapPin, Building2, CreditCard, ShoppingBag, Package, Loader2 } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Clock, MapPin, Building2, CreditCard, ShoppingBag, Package, Loader2, Star, MessageSquare, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../../api/axios';
+import StarRating from '../../components/products/StarRating';
 import { useOrderStore } from '../../store/orderStore';
 import OrderProgressTracker from '../../components/orders/OrderProgressTracker';
 import OrderStatusBadge from '../../components/orders/OrderStatusBadge';
@@ -13,6 +15,13 @@ const CustomerOrderDetail = () => {
     const { currentOrder, loading, fetchOrder, cancelOrder, confirmPayment } = useOrderStore();
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+    
+    // Review State
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [reviewingProduct, setReviewingProduct] = useState(null);
+    const [reviewRating, setReviewRating] = useState(0);
+    const [reviewComment, setReviewComment] = useState('');
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -50,6 +59,34 @@ const CustomerOrderDetail = () => {
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to submit payment');
             throw error;
+        }
+    };
+
+    const handleOpenReview = (product) => {
+        setReviewingProduct(product);
+        setReviewRating(0);
+        setReviewComment('');
+        setIsReviewModalOpen(true);
+    };
+
+    const handleSubmitReview = async () => {
+        if (reviewRating === 0) {
+            toast.error('Please select a star rating');
+            return;
+        }
+        setIsSubmittingReview(true);
+        try {
+            await api.post(`/products/${reviewingProduct.product_id}/reviews`, {
+                product_id: reviewingProduct.product_id,
+                rating: reviewRating,
+                comment: reviewComment
+            });
+            toast.success('Review submitted successfully!');
+            setIsReviewModalOpen(false);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to submit review');
+        } finally {
+            setIsSubmittingReview(false);
         }
     };
 
@@ -219,8 +256,19 @@ const CustomerOrderDetail = () => {
                                     ₱ {formatPrice(item.unit_price)} × {item.quantity} units
                                 </p>
                             </div>
-                            <div className="text-right">
-                                <p className="text-sm font-black text-slate-900">₱ {formatPrice(item.subtotal)}</p>
+                            <div className="flex items-center gap-4">
+                                {currentOrder.status === 'completed' && (
+                                    <button
+                                        onClick={() => handleOpenReview(item.product)}
+                                        className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                    >
+                                        <Star className="w-3 h-3 fill-indigo-600" />
+                                        Review
+                                    </button>
+                                )}
+                                <div className="text-right">
+                                    <p className="text-sm font-black text-slate-900">₱ {formatPrice(item.subtotal)}</p>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -262,6 +310,78 @@ const CustomerOrderDetail = () => {
                     onConfirm={handleConfirmPayment}
                     loading={false}
                 />
+            )}
+
+            {/* Review Modal */}
+            {isReviewModalOpen && reviewingProduct && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-8 pb-4 flex justify-between items-center bg-slate-50 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Rate Product</h3>
+                                <p className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-widest">How was your purchase?</p>
+                            </div>
+                            <button onClick={() => setIsReviewModalOpen(false)} className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-200 transition-all active:scale-90">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-8 space-y-8">
+                            {/* Product Info */}
+                            <div className="flex items-center gap-4 p-4 bg-indigo-50/50 rounded-3xl border border-indigo-100/50">
+                                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-indigo-100 shrink-0">
+                                    <Package className="w-8 h-8 text-indigo-300" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-slate-900 line-clamp-1">{reviewingProduct.name}</h4>
+                                    <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mt-0.5">{reviewingProduct.unique_sku}</p>
+                                </div>
+                            </div>
+
+                            {/* Stars */}
+                            <div className="flex flex-col items-center gap-3">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tap stars to rate</p>
+                                <StarRating rating={reviewRating} onChange={setReviewRating} interactive={true} size="lg" />
+                                {reviewRating > 0 && (
+                                    <p className="text-sm font-bold text-indigo-600 animate-in slide-in-from-top-2">
+                                        {reviewRating === 5 ? 'Excellent! 😍' : 
+                                         reviewRating === 4 ? 'Very Good! 😊' : 
+                                         reviewRating === 3 ? 'Good! 🙂' : 
+                                         reviewRating === 2 ? 'Fair! 😐' : 'Poor! ☹️'}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Comment */}
+                            <div>
+                                <label className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    Your Review
+                                </label>
+                                <textarea
+                                    value={reviewComment}
+                                    onChange={(e) => setReviewComment(e.target.value)}
+                                    placeholder="Write something about the product..."
+                                    className="w-full h-32 bg-slate-50 border border-slate-100 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 rounded-3xl p-5 text-sm text-slate-900 resize-none outline-none transition-all placeholder:text-slate-300"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleSubmitReview}
+                                disabled={isSubmittingReview}
+                                className="w-full h-16 bg-slate-900 hover:bg-indigo-600 text-white font-black rounded-3xl shadow-xl shadow-slate-900/20 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                            >
+                                {isSubmittingReview ? (
+                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                ) : (
+                                    <>
+                                        Submit Review
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
