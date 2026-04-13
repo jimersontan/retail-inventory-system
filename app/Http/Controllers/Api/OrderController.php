@@ -12,6 +12,8 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Inventory;
+use App\Models\User;
+use App\Notifications\SystemNotification;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -155,6 +157,17 @@ class OrderController extends Controller
         });
 
         $order->load(['user', 'branch', 'items.product', 'payment']);
+
+        // Notify Admins about new order
+        $admins = User::where('user_type', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new SystemNotification(
+                'New Order Placed',
+                "Order #{$order->order_id} has been placed by {$user->name}.",
+                'info'
+            ));
+        }
+
         return response()->json(new OrderResource($order), 201);
     }
 
@@ -223,6 +236,14 @@ class OrderController extends Controller
         });
 
         $order->load(['user', 'branch', 'items.product', 'payment']);
+
+        // Notify customer about status update
+        $order->user->notify(new SystemNotification(
+            'Order Status Updated',
+            "Your order #{$order->order_id} is now {$newStatus}.",
+            'success'
+        ));
+
         return new OrderResource($order);
     }
 
@@ -252,6 +273,14 @@ class OrderController extends Controller
         });
 
         $order->load(['user', 'branch', 'items.product', 'payment']);
+
+        // Notify customer if they didn't cancel it themselves (though currently only they or admins can)
+        $order->user->notify(new SystemNotification(
+            'Order Cancelled',
+            "Order #{$order->order_id} has been cancelled.",
+            'error'
+        ));
+
         return new OrderResource($order);
     }
 
@@ -284,6 +313,14 @@ class OrderController extends Controller
         ]);
 
         $order->load(['user', 'branch', 'items.product', 'payment']);
+
+        // Notify customer about payment confirmation
+        $order->user->notify(new SystemNotification(
+            'Payment Confirmed',
+            "Payment for order #{$order->order_id} has been received.",
+            'success'
+        ));
+
         return new OrderResource($order);
     }
 }

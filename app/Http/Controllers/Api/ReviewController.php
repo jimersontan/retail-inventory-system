@@ -106,6 +106,41 @@ class ReviewController extends Controller
     }
 
     /**
+     * Check if the authenticated user can review a product
+     */
+    public function canReview($productId)
+    {
+        $userId = auth()->id();
+        
+        // Check if user is a customer
+        if (auth()->user()->user_type !== 'customer') {
+            return response()->json(['can_review' => false, 'message' => 'Only customers can review products.']);
+        }
+
+        // Check if already reviewed
+        $exists = Review::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->exists();
+        
+        if ($exists) {
+            return response()->json(['can_review' => false, 'message' => 'You have already reviewed this product.']);
+        }
+
+        // Check if purchased and order is completed or delivered
+        $hasPurchased = \App\Models\Order::where('user_id', $userId)
+            ->whereIn('status', ['completed', 'delivered'])
+            ->whereHas('items', function($q) use ($productId) {
+                $q->where('product_id', $productId);
+            })
+            ->exists();
+
+        return response()->json([
+            'can_review' => $hasPurchased,
+            'message' => $hasPurchased ? 'Success' : 'You must purchase this product before reviewing.'
+        ]);
+    }
+
+    /**
      * Create a new review (customer only)
      * Ensures unique constraint: one review per user per product
      * Inline comment: UNIQUE(user_id, product_id) constraint checked before create
@@ -119,6 +154,11 @@ class ReviewController extends Controller
             return response()->json(['message' => 'Product ID is required.'], 422);
         }
 
+        // Check if user is a customer
+        if (auth()->user()->user_type !== 'customer') {
+            return response()->json(['message' => 'Only customers can review products.'], 403);
+        }
+
         // Check unique constraint: one review per user per product
         $exists = Review::where('user_id', $userId)
             ->where('product_id', $productId)
@@ -128,6 +168,21 @@ class ReviewController extends Controller
             return response()->json(
                 ['message' => 'You have already reviewed this product.'],
                 422
+            );
+        }
+
+        // Check if purchased and order is completed or delivered
+        $hasPurchased = \App\Models\Order::where('user_id', $userId)
+            ->whereIn('status', ['completed', 'delivered'])
+            ->whereHas('items', function($q) use ($productId) {
+                $q->where('product_id', $productId);
+            })
+            ->exists();
+        
+        if (!$hasPurchased) {
+            return response()->json(
+                ['message' => 'You must purchase this product before reviewing it.'],
+                403
             );
         }
         

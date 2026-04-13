@@ -28,13 +28,36 @@ const ProductDetail = () => {
     const [commentVal, setCommentVal] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
     const [hasReviewed, setHasReviewed] = useState(false); // Quick local check
+    const [canReview, setCanReview] = useState(false);
+    const [canReviewMsg, setCanReviewMsg] = useState('');
+    const [canReviewLoading, setCanReviewLoading] = useState(false);
 
     useEffect(() => {
         if (id) {
             fetchProduct(id).catch(() => navigate('/products', { replace: true }));
             fetchReviews();
+            if (isCustomer) {
+                checkCanReview();
+            }
         }
-    }, [id]);
+    }, [id, isCustomer]);
+
+    const checkCanReview = async () => {
+        setCanReviewLoading(true);
+        try {
+            const res = await api.get(`/products/${id}/can-review`);
+            setCanReview(res.data.can_review);
+            setCanReviewMsg(res.data.message);
+            // If already reviewed, set hasReviewed to true
+            if (res.data.message.includes('already reviewed')) {
+                setHasReviewed(true);
+            }
+        } catch (e) {
+            console.error('Failed to check review eligibility');
+        } finally {
+            setCanReviewLoading(false);
+        }
+    };
 
     const fetchReviews = async () => {
         setReviewsLoading(true);
@@ -313,6 +336,14 @@ const ProductDetail = () => {
                                 <div>
                                     <p className="text-sm font-bold text-emerald-900">You reviewed this product</p>
                                     <p className="text-xs text-emerald-700 mt-0.5">Thank you for sharing your experience!</p>
+                                </div>
+                            </div>
+                        ) : !canReview ? (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 shadow-sm flex items-start gap-3">
+                                <AlertTriangle className="text-amber-500 w-5 h-5 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <h4 className="text-sm font-bold text-amber-900">Review Restricted</h4>
+                                    <p className="text-xs text-amber-700 mt-1">{canReviewMsg || 'You must purchase this product before you can leave a review.'}</p>
                                 </div>
                             </div>
                         ) : (

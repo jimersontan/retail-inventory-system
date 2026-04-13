@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\CustomerProductController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Models\Customer;
 
 /*
@@ -43,6 +44,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard — ALL authenticated roles can access
     Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
     // All authenticated users can view categories and products
     Route::get('/categories', [CategoryController::class, 'index']);
@@ -176,6 +182,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/listings/{id}', [CustomerProductController::class, 'destroy']);
 
         // Customer Reviews
+        Route::get('/products/{id}/can-review', [ReviewController::class, 'canReview']);
         Route::post('/products/{id}/reviews', [ReviewController::class, 'store']);
         Route::get('/reviews/{id}', [ReviewController::class, 'show']);
         Route::put('/reviews/{id}', [ReviewController::class, 'update']);
