@@ -247,8 +247,18 @@ const CustomerOrderDetail = () => {
                 <div className="space-y-6">
                     {currentOrder.items?.map(item => (
                         <div key={item.item_id} className="flex gap-4 items-center group">
-                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-indigo-50 transition-colors">
-                                <Package className="w-8 h-8 text-slate-200 group-hover:text-indigo-200 transition-colors" />
+                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-indigo-50 transition-colors overflow-hidden relative">
+                                {item.product?.image_url ? (
+                                    <img 
+                                        src={item.product.image_url} 
+                                        alt={item.product.name} 
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }}
+                                    />
+                                ) : null}
+                                <Package 
+                                    className={`w-8 h-8 text-slate-200 group-hover:text-indigo-200 transition-colors ${item.product?.image_url ? 'hidden' : ''}`} 
+                                />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <h4 className="text-sm font-bold text-slate-900 truncate">{item.product?.name || 'Unknown Product'}</h4>

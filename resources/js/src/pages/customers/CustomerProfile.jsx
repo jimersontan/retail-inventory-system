@@ -9,11 +9,12 @@ import ListingCard from '../../components/customers/ListingCard';
 import ListingModal from './ListingModal';
 import toast from 'react-hot-toast';
 import { formatDate } from '../../utils/format';
+import api from '../../api/axios';
 
 const CustomerProfile = () => {
-    const { user, updateProfile } = useAuthStore();
-    const { currentCustomer, updateCustomer } = useCustomerStore();
+    const { user, fetchMe } = useAuthStore();
     const { listings, fetchListings, deleteListing } = useListingStore();
+    const currentCustomer = user?.customer;
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [isListingModalOpen, setIsListingModalOpen] = useState(false);
     const [editingListing, setEditingListing] = useState(null);
@@ -43,8 +44,9 @@ const CustomerProfile = () => {
 
     const handleProfileSave = async () => {
         try {
-            await updateCustomer(currentCustomer?.customer_id, formData);
+            await api.put('/customers/profile/update', formData);
             toast.success('Profile updated successfully');
+            await fetchMe();
             setIsEditingProfile(false);
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to update profile');

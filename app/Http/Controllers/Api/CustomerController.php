@@ -170,6 +170,43 @@ class CustomerController extends Controller
     }
 
     /**
+     * Update authenticated customer's own profile
+     */
+    public function updateProfile(UpdateCustomerRequest $req)
+    {
+        $user = auth()->user();
+        $customer = $user->customer;
+        
+        if (!$customer) {
+            return response()->json(['message' => 'Customer profile not found'], 404);
+        }
+        
+        $data = $req->validated();
+        
+        DB::transaction(function () use ($customer, $data) {
+            // Update User fields
+            if (isset($data['name'])) {
+                $customer->user->name = $data['name'];
+            }
+            if (isset($data['phone'])) {
+                $customer->user->phone = $data['phone'];
+            }
+            if (isset($data['address'])) {
+                $customer->user->address = $data['address'];
+            }
+            $customer->user->save();
+            
+            // Update Customer fields
+            if (isset($data['store_name'])) {
+                $customer->store_name = $data['store_name'];
+            }
+            $customer->save();
+        });
+        
+        return response()->json(new CustomerResource($customer->load('user', 'branch')));
+    }
+
+    /**
      * Verify customer account (admin only)
      * Sets verified_at = now(), status = active
      */

@@ -215,9 +215,16 @@ const LoginPage = () => {
                         </button>
                     </form>
 
-                    <div className="flex items-center justify-center gap-1 mt-6">
-                        <Shield className="text-slate-300 size-3" />
-                        <span className="text-xs text-slate-400">Role-based access control</span>
+                    <div className="text-center mt-6">
+                        <p className="text-sm text-slate-500">
+                            Don't have an account?{' '}
+                            <a
+                                href="/register"
+                                className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors"
+                            >
+                                Create Account
+                            </a>
+                        </p>
                     </div>
                 </div>
             </div>

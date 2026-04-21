@@ -11,7 +11,7 @@ import { formatAsLabel, formatRelativeDate } from '../../utils/format';
 const CustomerList = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
-    const { customers, loading, fetchCustomers, pagination } = useCustomerStore();
+    const { customers, loading, fetchCustomers, pagination, verifyCustomer, toggleCustomerStatus } = useCustomerStore();
     
     const [filters, setFilters] = useState({
         search: '',
@@ -53,15 +53,6 @@ const CustomerList = () => {
                     <h1 className="text-2xl font-bold text-slate-900">Customer Management</h1>
                     <p className="text-sm text-slate-500 mt-0.5">Manage registered customers and resellers</p>
                 </div>
-                {user?.user_type === 'admin' && (
-                    <button
-                        onClick={() => navigate('/customers/new')}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-                    >
-                        <UserPlus className="size-4" />
-                        Add Customer
-                    </button>
-                )}
             </div>
 
             {/* Stats Row */}
@@ -152,8 +143,8 @@ const CustomerList = () => {
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-900">Customer / Store</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-900">Branch</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-900">Joined</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-900">Address</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-900">Phone Number</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-900">Status</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-900">Verified</th>
                                 <th className="px-6 py-3 text-right text-xs font-semibold text-slate-900">Actions</th>
@@ -165,39 +156,36 @@ const CustomerList = () => {
                                 
                                 return (
                                     <tr key={customer.customer_id} className="hover:bg-slate-50 transition-colors">
-                                        {/* Customer Cell */}
+                                        {/* Customer & Store Cell */}
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center">
+                                                <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center shrink-0">
                                                     {initials}
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-semibold text-slate-900">{customer.user?.name}</p>
                                                     <p className="text-xs text-slate-400">{customer.user?.email}</p>
+                                                    {customer.store_name && (
+                                                        <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-1 uppercase font-semibold">
+                                                            <span>🏪</span> {customer.store_name}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
                                         
-                                        {/* Store Cell */}
+                                        {/* Address Cell */}
                                         <td className="px-6 py-4">
-                                            {customer.store_name ? (
-                                                <div className="flex items-center gap-1 text-sm text-slate-600">
-                                                    <span>🏪</span>
-                                                    {customer.store_name}
-                                                </div>
-                                            ) : (
-                                                <span className="text-slate-300">—</span>
-                                            )}
+                                            <p className="text-sm text-slate-600 line-clamp-2">
+                                                {customer.user?.address || <span className="text-slate-300">—</span>}
+                                            </p>
                                         </td>
                                         
-                                        {/* Branch Cell */}
+                                        {/* Phone Number Cell */}
                                         <td className="px-6 py-4">
-                                            <p className="text-sm text-slate-600">📍 {customer.branch?.name}</p>
-                                        </td>
-                                        
-                                        {/* Joined Date */}
-                                        <td className="px-6 py-4">
-                                            <p className="text-xs text-slate-400">{formatRelativeDate(customer.joined_at)}</p>
+                                            <p className="text-sm text-slate-600">
+                                                {customer.user?.phone || <span className="text-slate-300">—</span>}
+                                            </p>
                                         </td>
                                         
                                         {/* Status Badge */}
@@ -223,6 +211,16 @@ const CustomerList = () => {
                                                 
                                                 {user?.user_type === 'admin' && !customer.is_verified && (
                                                     <button
+                                                        onClick={async () => {
+                                                            if (window.confirm('Verifying this customer will activate their account. Are you sure?')) {
+                                                                try {
+                                                                    await verifyCustomer(customer.customer_id);
+                                                                    toast.success('Customer verified successfully');
+                                                                } catch (err) {
+                                                                    toast.error('Failed to verify customer');
+                                                                }
+                                                            }
+                                                        }}
                                                         className="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors"
                                                         title="Verify Customer"
                                                     >
@@ -232,6 +230,17 @@ const CustomerList = () => {
                                                 
                                                 {user?.user_type === 'admin' && (
                                                     <button
+                                                        onClick={async () => {
+                                                            const action = customer.status === 'active' ? 'deactivate' : 'activate';
+                                                            if (window.confirm(`Are you sure you want to ${action} this customer?`)) {
+                                                                try {
+                                                                    await toggleCustomerStatus(customer.customer_id);
+                                                                    toast.success(`Customer ${action}d successfully`);
+                                                                } catch (err) {
+                                                                    toast.error(`Failed to ${action} customer`);
+                                                                }
+                                                            }
+                                                        }}
                                                         className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
                                                         title={customer.status === 'active' ? 'Deactivate' : 'Activate'}
                                                     >

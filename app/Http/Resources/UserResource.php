@@ -38,6 +38,17 @@ class UserResource extends JsonResource
                         : null,
                 ];
             }),
+            'customer' => $this->whenLoaded('customer', function() {
+                return [
+                    'customer_id' => $this->customer->customer_id,
+                    'branch_id' => $this->customer->branch_id,
+                    'store_name' => $this->customer->store_name,
+                    'status' => $this->customer->status,
+                    'is_verified' => $this->customer->is_verified,
+                    'verified_at' => $this->customer->verified_at,
+                    'joined_at' => $this->customer->joined_at,
+                ];
+            }),
         ];
     }
 }

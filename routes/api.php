@@ -28,6 +28,8 @@ use App\Models\Customer;
 */
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::get('/branches-public', [BranchController::class, 'index']); // For registration branch picker
 Route::get('/products/{id}/reviews', [ReviewController::class, 'indexByProduct']);
 
 /*
@@ -172,7 +174,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─── Customer Routes ──────────────────────────────
     Route::middleware('role:customer')->group(function () {
         // Customer Profile Update
-        Route::put('/customers/profile/update', [CustomerController::class, 'update']);
+        Route::put('/customers/profile/update', [CustomerController::class, 'updateProfile']);
 
         // Reseller Listings
         Route::get('/listings', [CustomerProductController::class, 'index']);

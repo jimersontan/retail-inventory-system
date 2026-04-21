@@ -103,9 +103,19 @@ const CustomerOrderList = () => {
                                     {order.items?.slice(0, 3).map((item, idx) => (
                                         <div
                                             key={idx}
-                                            className="w-10 h-10 rounded-lg bg-slate-100 border-2 border-white flex items-center justify-center"
+                                            className="w-10 h-10 rounded-lg bg-slate-100 border-2 border-white flex items-center justify-center overflow-hidden"
                                         >
-                                            <Package className="w-4 h-4 text-slate-300" />
+                                            {item.product?.image_url ? (
+                                                <img 
+                                                    src={item.product.image_url} 
+                                                    alt={item.product.name} 
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }}
+                                                />
+                                            ) : null}
+                                            <Package 
+                                                className={`w-4 h-4 text-slate-300 ${item.product?.image_url ? 'hidden' : ''}`} 
+                                            />
                                         </div>
                                     ))}
                                 </div>

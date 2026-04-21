@@ -8,6 +8,7 @@ import usePermissions from './hooks/usePermissions';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import UnauthorizedPage from './pages/auth/UnauthorizedPage';
 
 // Dashboards — role-specific
@@ -76,6 +77,7 @@ const App = () => {
                 {/* Public */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
                 {/* Authenticated Shell */}
