@@ -81,7 +81,7 @@ const PaymentModal = ({ isOpen, onClose, order, onConfirm, loading }) => {
                             💵 Cash
                         </p>
                         <p className={`text-xs mt-1 ${method === 'cash' ? 'text-indigo-500' : 'text-slate-400'}`}>
-                            Pay at counter
+                            Cash on Delivery
                         </p>
                     </button>
 
@@ -99,23 +99,6 @@ const PaymentModal = ({ isOpen, onClose, order, onConfirm, loading }) => {
                         </p>
                         <p className={`text-xs mt-1 ${method === 'gcash' ? 'text-indigo-500' : 'text-slate-400'}`}>
                             Mobile payment
-                        </p>
-                    </button>
-
-                    {/* Card */}
-                    <button
-                        onClick={() => setMethod('card')}
-                        className={`w-full text-left rounded-xl p-4 transition-all border-2 ${
-                            method === 'card'
-                                ? 'border-indigo-500 bg-indigo-50'
-                                : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                    >
-                        <p className={`font-medium text-sm ${method === 'card' ? 'text-indigo-900' : 'text-slate-700'}`}>
-                            💳 Card
-                        </p>
-                        <p className={`text-xs mt-1 ${method === 'card' ? 'text-indigo-500' : 'text-slate-400'}`}>
-                            Credit/Debit card
                         </p>
                     </button>
 

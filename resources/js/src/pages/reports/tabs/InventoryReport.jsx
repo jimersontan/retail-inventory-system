@@ -93,12 +93,10 @@ const InventoryReport = () => {
                         <thead>
                             <tr className="border-b border-slate-200">
                                 <th className="text-left py-3 px-3 font-semibold text-slate-700">Product</th>
-                                <th className="text-left py-3 px-3 font-semibold text-slate-700">SKU</th>
                                 <th className="text-left py-3 px-3 font-semibold text-slate-700">Category</th>
                                 <th className="text-left py-3 px-3 font-semibold text-slate-700">Branch</th>
-                                <th className="text-left py-3 px-3 font-semibold text-slate-700">Qty</th>
-                                <th className="text-left py-3 px-3 font-semibold text-slate-700">Max</th>
-                                <th className="text-left py-3 px-3 font-semibold text-slate-700">Status</th>
+                                <th className="text-left py-3 px-3 font-semibold text-slate-700">Stock Level</th>
+                                <th className="text-left py-3 px-3 font-semibold text-slate-700 text-right">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -118,15 +116,29 @@ const InventoryReport = () => {
 
                                     return (
                                         <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
-                                            <td className="py-3 px-3 text-slate-700 font-medium">{row.name}</td>
-                                            <td className="py-3 px-3 text-slate-500 text-xs">{row.unique_sku}</td>
-                                            <td className="py-3 px-3 text-slate-700">{row.category_name}</td>
-                                            <td className="py-3 px-3 text-slate-700">{row.branch}</td>
-                                            <td className="py-3 px-3 text-slate-900 font-semibold">{row.quantity}</td>
-                                            <td className="py-3 px-3 text-slate-700">{row.max_stock}</td>
                                             <td className="py-3 px-3">
-                                                <span className={`text-xs font-semibold px-2.5 py-1.5 rounded-full ${statusColor}`}>
-                                                    {row.status === 'out_of_stock' ? 'Out of Stock' : row.status === 'low_stock' ? 'Low Stock' : 'In Stock'}
+                                                <p className="text-slate-900 font-medium">{row.name}</p>
+                                                <p className="text-[10px] text-slate-400 font-mono">{row.unique_sku}</p>
+                                            </td>
+                                            <td className="py-3 px-3 text-slate-600 text-xs">{row.category_name}</td>
+                                            <td className="py-3 px-3 text-slate-600 text-xs">{row.branch}</td>
+                                            <td className="py-3 px-3">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-sm text-slate-900 font-bold w-8 text-right">{row.quantity}</span>
+                                                    <div className="flex-1 min-w-[60px] h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className={`h-full rounded-full ${
+                                                                row.fill_percent < 20 ? 'bg-red-500' : row.fill_percent < 50 ? 'bg-amber-500' : 'bg-emerald-500'
+                                                            }`}
+                                                            style={{ width: `${Math.min(row.fill_percent, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-400 w-8">{row.fill_percent}%</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-3">
+                                                <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${statusColor}`}>
+                                                    {row.status === 'out_of_stock' ? 'Out' : row.status === 'low_stock' ? 'Low' : 'OK'}
                                                 </span>
                                             </td>
                                         </tr>

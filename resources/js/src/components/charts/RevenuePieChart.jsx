@@ -18,7 +18,7 @@ const RevenuePieChart = ({ data = [], loading, title = 'Revenue by Category' }) 
 
     // Normalize data shape
     const chartData = data.map((item, idx) => ({
-        name: item.category || item.name || item.method || `Item ${idx + 1}`,
+        name: item.status || item.category || item.name || item.method || `Item ${idx + 1}`,
         value: parseFloat(item.revenue || item.value || item.count || 0),
         color: item.color || COLORS[idx % COLORS.length],
     }));

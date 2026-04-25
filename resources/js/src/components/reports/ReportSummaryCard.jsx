@@ -2,12 +2,23 @@ import React from 'react';
 
 const ReportSummaryCard = ({ label, value, icon: Icon, iconBg, colored = false }) => {
     const formatValue = (val) => {
-        if (typeof val === 'string' && val.includes('₱')) return val;
-        if (typeof val === 'number' && (label.includes('Revenue') || label.includes('Amount') || label.includes('Total'))) {
-            if (label.includes('Revenue') || label.includes('Amount') || label.includes('Total')) {
-                return '₱ ' + val.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const strVal = String(val);
+        if (strVal.includes('₱')) return val;
+        
+        const lowerLabel = label.toLowerCase();
+        const isCurrency = lowerLabel.includes('revenue') || 
+                          lowerLabel.includes('amount') || 
+                          lowerLabel.includes('price') || 
+                          lowerLabel.includes('value') ||
+                          lowerLabel.includes('cost');
+
+        if (isCurrency) {
+            const numVal = typeof val === 'number' ? val : parseFloat(strVal);
+            if (!isNaN(numVal)) {
+                return '₱ ' + numVal.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
         }
+
         if (typeof val === 'number') {
             return val.toLocaleString();
         }

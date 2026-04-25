@@ -68,14 +68,16 @@ const SalesReport = () => {
                             <thead>
                                 <tr className="border-b border-slate-200">
                                     <th className="text-left py-3 px-3 font-semibold text-slate-700">Date</th>
-                                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Transactions</th>
-                                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Revenue</th>
+                                    <th className="text-left py-3 px-3 font-semibold text-slate-700 text-center">Txns</th>
+                                    <th className="text-right py-3 px-3 font-semibold text-slate-700">Cash</th>
+                                    <th className="text-right py-3 px-3 font-semibold text-slate-700">Card/GCash</th>
+                                    <th className="text-right py-3 px-3 font-semibold text-slate-700">Revenue</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {by_day?.data?.length === 0 ? (
                                     <tr>
-                                        <td colSpan="3" className="text-center py-6 text-slate-500">
+                                        <td colSpan="5" className="text-center py-6 text-slate-500">
                                             No data available
                                         </td>
                                     </tr>
@@ -83,8 +85,10 @@ const SalesReport = () => {
                                     by_day?.data?.map((row, idx) => (
                                         <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
                                             <td className="py-3 px-3 text-slate-700">{row.date}</td>
-                                            <td className="py-3 px-3 text-slate-700">{row.transactions}</td>
-                                            <td className="py-3 px-3 text-slate-900 font-semibold">
+                                            <td className="py-3 px-3 text-slate-700 text-center">{row.transactions}</td>
+                                            <td className="py-3 px-3 text-slate-600 text-right">₱{formatCurrency(row.cash_amount)}</td>
+                                            <td className="py-3 px-3 text-slate-600 text-right">₱{formatCurrency((parseFloat(row.card_amount) || 0) + (parseFloat(row.gcash_amount) || 0))}</td>
+                                            <td className="py-3 px-3 text-slate-900 font-bold text-right">
                                                 ₱ {formatCurrency(row.revenue)}
                                             </td>
                                         </tr>

@@ -14,7 +14,8 @@ const MovementReport = () => {
     const {
         summary = {},
         over_time = [],
-        by_type = []
+        by_type = [],
+        full_list = {}
     } = movementData;
 
     return (
@@ -51,39 +52,65 @@ const MovementReport = () => {
             {/* Trend Chart */}
             <TrendLineChart data={over_time} title="Stock Movement Over Time" />
 
-            {/* Movement by Type */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 overflow-hidden">
-                <h3 className="text-base font-semibold text-slate-900 mb-6">Movement by Type</h3>
+            {/* Movement Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Movement by Type */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 overflow-hidden">
+                    <h3 className="text-base font-semibold text-slate-900 mb-6">By Type</h3>
+                    <div className="space-y-4">
+                        {by_type.map((row, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
+                                <div>
+                                    <p className="text-xs font-bold text-slate-900 uppercase">{row.type}</p>
+                                    <p className="text-[10px] text-slate-500">{row.count} movements</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-bold text-slate-900">{row.total_qty}</p>
+                                    <p className="text-[10px] text-slate-500">units</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-slate-200">
-                                <th className="text-left py-3 px-3 font-semibold text-slate-700">Type</th>
-                                <th className="text-left py-3 px-3 font-semibold text-slate-700">Count</th>
-                                <th className="text-left py-3 px-3 font-semibold text-slate-700">Total Quantity</th>
-                                <th className="text-left py-3 px-3 font-semibold text-slate-700">Products Affected</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {by_type.length === 0 ? (
-                                <tr>
-                                    <td colSpan="4" className="text-center py-6 text-slate-500">
-                                        No movement data available
-                                    </td>
+                {/* Recent Detailed Movements */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 overflow-hidden">
+                    <h3 className="text-base font-semibold text-slate-900 mb-6">Recent Details</h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-slate-200">
+                                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Product</th>
+                                    <th className="text-left py-3 px-3 font-semibold text-slate-700 text-center">Qty</th>
+                                    <th className="text-left py-3 px-3 font-semibold text-slate-700 text-right">Date</th>
                                 </tr>
-                            ) : (
-                                by_type.map((row, idx) => (
-                                    <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
-                                        <td className="py-3 px-3 text-slate-900 font-medium">{row.type}</td>
-                                        <td className="py-3 px-3 text-slate-700">{row.count}</td>
-                                        <td className="py-3 px-3 text-slate-900 font-semibold">{row.total_qty}</td>
-                                        <td className="py-3 px-3 text-slate-700">{row.products_affected}</td>
+                            </thead>
+                            <tbody>
+                                {full_list?.data?.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="3" className="text-center py-6 text-slate-500">No data</td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    full_list?.data?.slice(0, 10).map((row, idx) => (
+                                        <tr key={idx} className="border-b border-slate-50">
+                                            <td className="py-2 px-3">
+                                                <p className="font-medium text-slate-900">{row.product_name}</p>
+                                                <p className="text-[10px] text-slate-500">{row.type.toUpperCase()}</p>
+                                            </td>
+                                            <td className="py-2 px-3 text-center">
+                                                <span className={`font-bold ${row.quantity > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                    {row.quantity > 0 ? `+${row.quantity}` : row.quantity}
+                                                </span>
+                                            </td>
+                                            <td className="py-2 px-3 text-right text-slate-500 text-xs">
+                                                {new Date(row.date).toLocaleDateString()}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

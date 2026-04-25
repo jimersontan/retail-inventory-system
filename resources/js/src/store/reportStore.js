@@ -28,7 +28,14 @@ export const useReportStore = create((set, get) => ({
     },
 
     // Actions
-    setActiveTab: (tab) => set({ activeTab: tab }),
+    setActiveTab: (tab) => {
+        set({ activeTab: tab });
+        const { dateRange } = get();
+        if (tab === 'sales') get().fetchSalesReport(dateRange.from, dateRange.to);
+        if (tab === 'inventory') get().fetchInventoryReport(dateRange.from, dateRange.to);
+        if (tab === 'purchases') get().fetchPurchaseReport(dateRange.from, dateRange.to);
+        if (tab === 'movements') get().fetchMovementReport(dateRange.from, dateRange.to);
+    },
 
     setDateRange: (from, to) => {
         set({ dateRange: { from, to } });
@@ -127,7 +134,7 @@ export const useReportStore = create((set, get) => ({
             link.setAttribute('download', `ris_${type}_report.csv`);
             document.body.appendChild(link);
             link.click();
-            link.parentChild.removeChild(link);
+            document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Failed to export report:', error);

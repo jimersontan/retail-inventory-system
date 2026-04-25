@@ -48,12 +48,6 @@ const navConfig = {
         { section: 'SALES', items: [
             { label: 'Sales / POS', icon: CreditCard, path: '/pos' },
         ]},
-        /* Locked items — display only, no navigation */
-        { section: 'LOCKED', locked: true, items: [
-            { label: 'Branches', icon: Building2 },
-            { label: 'User Accounts', icon: UserCog },
-            { label: 'Roles & Permissions', icon: Shield },
-        ]},
     ],
     cashier: [
         { section: 'MAIN', items: [
@@ -65,12 +59,6 @@ const navConfig = {
         { section: 'CATALOG', items: [
             { label: 'Products', icon: Package, path: '/products' },
         ]},
-        { section: 'LOCKED', locked: true, items: [
-            { label: 'Inventory', icon: Warehouse },
-            { label: 'Employees', icon: Users },
-            { label: 'Branches', icon: Building2 },
-            { label: 'Purchase Orders', icon: ShoppingCart },
-        ]},
     ],
     customer: [
         { section: 'STORE', items: [
@@ -81,11 +69,6 @@ const navConfig = {
             { label: 'My Orders', icon: ClipboardList, path: '/my-orders' },
             { label: 'My Reviews', icon: Star, path: '/my-reviews' },
             { label: 'My Profile', icon: User, path: '/profile' },
-        ]},
-        { section: 'LOCKED', locked: true, items: [
-            { label: 'Inventory', icon: Warehouse },
-            { label: 'Sales', icon: CreditCard },
-            { label: 'Branches', icon: Building2 },
         ]},
     ],
 };

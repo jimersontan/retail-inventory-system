@@ -4,14 +4,13 @@ import { Banknote, CreditCard, Smartphone } from 'lucide-react';
 const methods = [
     { id: 'cash', label: 'Cash', Icon: Banknote, icon: 'text-emerald-500' },
     { id: 'gcash', label: 'GCash', Icon: Smartphone, icon: 'text-blue-500' },
-    { id: 'card', label: 'Card', Icon: CreditCard, icon: 'text-purple-500' },
 ];
 
 const PaymentMethodSelector = ({ value, onChange }) => {
     return (
         <div>
             <label className="text-sm font-medium text-slate-700 mb-2 block">Payment Method</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
                 {methods.map((method) => (
                     <button
                         key={method.id}

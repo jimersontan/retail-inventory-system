@@ -15,7 +15,7 @@ class ConfirmPaymentRequest extends FormRequest
     {
         return [
             'method' => 'required|in:cash,gcash,card',
-            'reference_number' => 'required_if:method,gcash|string|max:255',
+            'reference_number' => 'required_if:method,gcash|nullable|string|max:255',
         ];
     }
 

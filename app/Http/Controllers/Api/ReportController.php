@@ -24,7 +24,7 @@ class ReportController extends Controller
                 'total_revenue' => DB::table('sales')
                     ->whereBetween('sale_date', [$from, $to])
                     ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
-                    ->sum('sale_amount') ?? 0,
+                    ->sum('total_amount') ?? 0,
                 
                 'total_transactions' => DB::table('sales')
                     ->whereBetween('sale_date', [$from, $to])
@@ -34,7 +34,7 @@ class ReportController extends Controller
                 'avg_sale' => DB::table('sales')
                     ->whereBetween('sale_date', [$from, $to])
                     ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
-                    ->avg('sale_amount') ?? 0,
+                    ->avg('total_amount') ?? 0,
                 
                 'total_items_sold' => DB::table('sale_details')
                     ->join('sales', 'sale_details.sale_id', '=', 'sales.sale_id')
@@ -46,7 +46,7 @@ class ReportController extends Controller
             // Sales by branch (BarChart data)
             $byBranch = DB::table('sales')
                 ->join('branches', 'sales.branch_id', '=', 'branches.branch_id')
-                ->selectRaw('branches.name, SUM(sales.sale_amount) as revenue, COUNT(*) as count')
+                ->selectRaw('branches.name, SUM(sales.total_amount) as revenue, COUNT(*) as count')
                 ->whereBetween('sales.sale_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('sales.branch_id', $userBranchId))
                 ->groupBy('branches.branch_id', 'branches.name')
@@ -60,10 +60,10 @@ class ReportController extends Controller
 
             // Daily breakdown (table data)
             $byDay = DB::table('sales')
-                ->selectRaw('DATE(sale_date) as date, COUNT(*) as transactions, SUM(sale_amount) as revenue')
-                ->selectRaw('SUM(CASE WHEN payment_method = "cash" THEN sale_amount ELSE 0 END) as cash_amount')
-                ->selectRaw('SUM(CASE WHEN payment_method = "card" THEN sale_amount ELSE 0 END) as card_amount')
-                ->selectRaw('SUM(CASE WHEN payment_method = "gcash" THEN sale_amount ELSE 0 END) as gcash_amount')
+                ->selectRaw('DATE(sale_date) as date, COUNT(*) as transactions, SUM(total_amount) as revenue')
+                ->selectRaw('SUM(CASE WHEN COALESCE(payment_method, "cash") = "cash" THEN total_amount ELSE 0 END) as cash_amount')
+                ->selectRaw('SUM(CASE WHEN payment_method = "card" THEN total_amount ELSE 0 END) as card_amount')
+                ->selectRaw('SUM(CASE WHEN payment_method = "gcash" THEN total_amount ELSE 0 END) as gcash_amount')
                 ->whereBetween('sale_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
                 ->groupBy(DB::raw('DATE(sale_date)'))
@@ -72,10 +72,10 @@ class ReportController extends Controller
 
             // Payment methods breakdown (PieChart)
             $byPayment = DB::table('sales')
-                ->selectRaw('COALESCE(payment_method, "cash") as method, SUM(sale_amount) as amount, COUNT(*) as count')
+                ->selectRaw('COALESCE(payment_method, "cash") as method, SUM(total_amount) as amount, COUNT(*) as count')
                 ->whereBetween('sale_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
-                ->groupBy('payment_method')
+                ->groupBy(DB::raw('COALESCE(payment_method, "cash")'))
                 ->get()
                 ->map(function($item) {
                     $colors = ['cash' => '#10B981', 'card' => '#4F46E5', 'gcash' => '#F59E0B'];
@@ -173,12 +173,7 @@ class ReportController extends Controller
             });
 
             // Create a new paginator with the transformed items
-            $fullList = new \Illuminate\Pagination\Paginator(
-                $items,
-                $fullList->perPage(),
-                $fullList->currentPage(),
-                ['path' => $fullList->path()]
-            );
+            $fullList->setCollection($items);
 
             return response()->json([
                 'status' => 'success',
@@ -234,7 +229,13 @@ class ReportController extends Controller
                 ->groupBy('status')
                 ->get()
                 ->map(function($item) {
-                    $colors = ['pending' => '#F59E0B', 'completed' => '#10B981', 'cancelled' => '#EF4444'];
+                    $colors = [
+                        'pending' => '#F59E0B', 
+                        'approved' => '#6366F1', 
+                        'received' => '#10B981', 
+                        'completed' => '#10B981', 
+                        'cancelled' => '#EF4444'
+                    ];
                     return [
                         'status' => ucfirst($item->status),
                         'count' => (int)$item->count,
@@ -268,12 +269,7 @@ class ReportController extends Controller
             });
 
             // Create a new paginator with the transformed items
-            $poList = new \Illuminate\Pagination\Paginator(
-                $items,
-                $poList->perPage(),
-                $poList->currentPage(),
-                ['path' => $poList->path()]
-            );
+            $poList->setCollection($items);
 
             return response()->json([
                 'status' => 'success',
@@ -301,28 +297,28 @@ class ReportController extends Controller
             // Summary
             $totalMovements = DB::table('stock_movements')
                 ->join('inventory', 'stock_movements.inventory_id', '=', 'inventory.inventory_id')
-                ->whereBetween('stock_movements.movement_time', [$from, $to])
+                ->whereBetween('stock_movements.movement_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
                 ->count();
 
             $totalIn = DB::table('stock_movements')
                 ->join('inventory', 'stock_movements.inventory_id', '=', 'inventory.inventory_id')
-                ->whereIn('stock_movements.movement_type', ['purchase_order', 'adjustment'])
-                ->whereBetween('stock_movements.movement_time', [$from, $to])
+                ->whereIn('stock_movements.reference_type', ['purchase_order', 'adjustment'])
+                ->whereBetween('stock_movements.movement_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
                 ->sum('stock_movements.quantity') ?? 0;
 
             $totalOut = DB::table('stock_movements')
                 ->join('inventory', 'stock_movements.inventory_id', '=', 'inventory.inventory_id')
-                ->whereIn('stock_movements.movement_type', ['sale', 'order'])
-                ->whereBetween('stock_movements.movement_time', [$from, $to])
+                ->whereIn('stock_movements.reference_type', ['sale', 'order'])
+                ->whereBetween('stock_movements.movement_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
                 ->sum('stock_movements.quantity') ?? 0;
 
             $adjustments = DB::table('stock_movements')
                 ->join('inventory', 'stock_movements.inventory_id', '=', 'inventory.inventory_id')
-                ->where('stock_movements.movement_type', 'adjustment')
-                ->whereBetween('stock_movements.movement_time', [$from, $to])
+                ->where('stock_movements.reference_type', 'adjustment')
+                ->whereBetween('stock_movements.movement_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
                 ->count();
 
@@ -336,12 +332,12 @@ class ReportController extends Controller
             // Over time (LineChart - 2 lines: in & out)
             $overTime = DB::table('stock_movements')
                 ->join('inventory', 'stock_movements.inventory_id', '=', 'inventory.inventory_id')
-                ->selectRaw('DATE(stock_movements.movement_time) as date')
-                ->selectRaw('SUM(CASE WHEN stock_movements.movement_type IN ("purchase_order", "adjustment") THEN stock_movements.quantity ELSE 0 END) as stock_in')
-                ->selectRaw('SUM(CASE WHEN stock_movements.movement_type IN ("sale", "order") THEN stock_movements.quantity ELSE 0 END) as stock_out')
-                ->whereBetween('stock_movements.movement_time', [$from, $to])
+                ->selectRaw('DATE(stock_movements.movement_date) as date')
+                ->selectRaw('SUM(CASE WHEN stock_movements.reference_type IN ("purchase_order", "adjustment") THEN stock_movements.quantity ELSE 0 END) as stock_in')
+                ->selectRaw('SUM(CASE WHEN stock_movements.reference_type IN ("sale", "order") THEN stock_movements.quantity ELSE 0 END) as stock_out')
+                ->whereBetween('stock_movements.movement_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
-                ->groupBy(DB::raw('DATE(stock_movements.movement_time)'))
+                ->groupBy(DB::raw('DATE(stock_movements.movement_date)'))
                 ->orderBy('date')
                 ->get()
                 ->map(fn($item) => [
@@ -353,11 +349,11 @@ class ReportController extends Controller
             // By type (table)
             $byType = DB::table('stock_movements')
                 ->join('inventory', 'stock_movements.inventory_id', '=', 'inventory.inventory_id')
-                ->selectRaw('movement_type, COUNT(*) as count, SUM(quantity) as total_qty')
+                ->selectRaw('reference_type as movement_type, COUNT(*) as count, SUM(stock_movements.quantity) as total_qty')
                 ->selectRaw('COUNT(DISTINCT inventory.product_id) as products_affected')
-                ->whereBetween('stock_movements.movement_time', [$from, $to])
+                ->whereBetween('stock_movements.movement_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
-                ->groupBy('movement_type')
+                ->groupBy('reference_type')
                 ->orderByDesc('total_qty')
                 ->get()
                 ->map(fn($item) => [
@@ -367,12 +363,30 @@ class ReportController extends Controller
                     'products_affected' => (int)$item->products_affected
                 ]);
 
+            // Recent detailed movements
+            $fullList = DB::table('stock_movements')
+                ->join('inventory', 'stock_movements.inventory_id', '=', 'inventory.inventory_id')
+                ->join('products', 'inventory.product_id', '=', 'products.product_id')
+                ->join('branches', 'inventory.branch_id', '=', 'branches.branch_id')
+                ->select(
+                    'stock_movements.movement_date as date',
+                    'products.name as product_name',
+                    'stock_movements.reference_type as type',
+                    'stock_movements.quantity',
+                    'branches.name as branch'
+                )
+                ->whereBetween('stock_movements.movement_date', [$from, $to])
+                ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
+                ->orderByDesc('stock_movements.movement_date')
+                ->paginate(10);
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
                     'summary' => $summary,
                     'over_time' => $overTime,
                     'by_type' => $byType,
+                    'full_list' => $fullList
                 ]
             ]);
         } catch (\Exception $e) {
@@ -396,12 +410,20 @@ class ReportController extends Controller
             return response()->streamDownload(function() use ($type, $from, $to, $userBranchId) {
                 $out = fopen('php://output', 'w');
 
-                match($type) {
-                    'sales' => $this->exportSales($out, $from, $to, $userBranchId),
-                    'inventory' => $this->exportInventory($out, $userBranchId),
-                    'purchases' => $this->exportPurchases($out, $from, $to, $userBranchId),
-                    'movements' => $this->exportMovements($out, $from, $to, $userBranchId),
-                };
+                switch($type) {
+                    case 'sales':
+                        $this->exportSales($out, $from, $to, $userBranchId);
+                        break;
+                    case 'inventory':
+                        $this->exportInventory($out, $userBranchId);
+                        break;
+                    case 'purchases':
+                        $this->exportPurchases($out, $from, $to, $userBranchId);
+                        break;
+                    case 'movements':
+                        $this->exportMovements($out, $from, $to, $userBranchId);
+                        break;
+                }
 
                 fclose($out);
             }, $filename, [
@@ -420,10 +442,10 @@ class ReportController extends Controller
         DB::table('sales')
             ->join('branches', 'sales.branch_id', '=', 'branches.branch_id')
             ->selectRaw('DATE(sales.sale_date) as date, branches.name')
-            ->selectRaw('SUM(sales.sale_amount) as revenue, COUNT(*) as count, AVG(sales.sale_amount) as avg')
-            ->selectRaw('SUM(CASE WHEN sales.payment_method = "cash" THEN sales.sale_amount ELSE 0 END) as cash')
-            ->selectRaw('SUM(CASE WHEN sales.payment_method = "card" THEN sales.sale_amount ELSE 0 END) as card')
-            ->selectRaw('SUM(CASE WHEN sales.payment_method = "gcash" THEN sales.sale_amount ELSE 0 END) as gcash')
+            ->selectRaw('SUM(sales.total_amount) as revenue, COUNT(*) as count, AVG(sales.total_amount) as avg')
+            ->selectRaw('SUM(CASE WHEN sales.payment_method = "cash" THEN sales.total_amount ELSE 0 END) as cash')
+            ->selectRaw('SUM(CASE WHEN sales.payment_method = "card" THEN sales.total_amount ELSE 0 END) as card')
+            ->selectRaw('SUM(CASE WHEN sales.payment_method = "gcash" THEN sales.total_amount ELSE 0 END) as gcash')
             ->whereBetween('sales.sale_date', [$from, $to])
             ->when($userBranchId, fn($q) => $q->where('sales.branch_id', $userBranchId))
             ->groupBy('date', 'branches.branch_id', 'branches.name')
@@ -523,16 +545,16 @@ class ReportController extends Controller
             ->join('branches', 'inventory.branch_id', '=', 'branches.branch_id')
             ->join('users', 'stock_movements.moved_by', '=', 'users.user_id')
             ->select(
-                'stock_movements.movement_time',
-                'stock_movements.movement_type',
+                'stock_movements.movement_date as movement_time',
+                'stock_movements.reference_type as movement_type',
                 'products.name',
                 'stock_movements.quantity',
                 'branches.name as branch',
                 'users.name as user_name'
             )
-            ->whereBetween('stock_movements.movement_time', [$from, $to])
+            ->whereBetween('stock_movements.movement_date', [$from, $to])
             ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
-            ->orderByDesc('movement_time')
+            ->orderByDesc('stock_movements.movement_date')
             ->chunk(100, function($rows) use ($out) {
                 foreach ($rows as $row) {
                     fputcsv($out, [

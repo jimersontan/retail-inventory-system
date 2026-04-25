@@ -1,6 +1,13 @@
 import React from 'react';
 
 const TrendLineChart = ({ data = [], title = "Stock Trend" }) => {
+    const chartWidth = 400;
+    const chartHeight = 250;
+    const paddingLeft = 60;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const contentWidth = chartWidth - paddingLeft - paddingRight;
+
     if (data.length === 0) {
         return (
             <div className="bg-white rounded-2xl border border-slate-200 p-6">
@@ -14,21 +21,20 @@ const TrendLineChart = ({ data = [], title = "Stock Trend" }) => {
 
     const maxIn = Math.max(...data.map(d => d.stock_in || 0));
     const maxOut = Math.max(...data.map(d => d.stock_out || 0));
-    const maxValue = Math.max(maxIn, maxOut) || 1;
-    const chartHeight = 250;
+    const maxValue = Math.max(maxIn, maxOut, 1);
 
     const pointsIn = data
         .map((d, i) => {
-            const x = 60 + (i / (data.length - 1 || 1)) * 90;
-            const y = chartHeight - ((d.stock_in || 0) / maxValue) * (chartHeight - 40);
+            const x = paddingLeft + (i / (data.length - 1 || 1)) * contentWidth;
+            const y = chartHeight - ((d.stock_in || 0) / maxValue) * (chartHeight - paddingTop);
             return `${x},${y}`;
         })
         .join(' ');
 
     const pointsOut = data
         .map((d, i) => {
-            const x = 60 + (i / (data.length - 1 || 1)) * 90;
-            const y = chartHeight - ((d.stock_out || 0) / maxValue) * (chartHeight - 40);
+            const x = paddingLeft + (i / (data.length - 1 || 1)) * contentWidth;
+            const y = chartHeight - ((d.stock_out || 0) / maxValue) * (chartHeight - paddingTop);
             return `${x},${y}`;
         })
         .join(' ');
@@ -37,74 +43,71 @@ const TrendLineChart = ({ data = [], title = "Stock Trend" }) => {
         <div className="bg-white rounded-2xl border border-slate-200 p-6">
             <h3 className="text-base font-semibold text-slate-900 mb-6">{title}</h3>
 
-            <div className="relative" style={{ height: `${chartHeight + 60}px` }}>
-                <svg className="w-full h-full" style={{ overflow: 'visible' }} viewBox={`0 0 100 ${chartHeight}`}>
+            <div className="relative overflow-hidden" style={{ height: `${chartHeight + 60}px` }}>
+                <svg className="w-full h-full" viewBox={`0 0 ${chartWidth} ${chartHeight + 40}`} preserveAspectRatio="xMidYMid meet">
                     {/* Grid lines */}
-                    {[0, 25, 50, 75, 100].map((percent) => (
-                        <line
-                            key={`grid-${percent}`}
-                            x1="60"
-                            y1={chartHeight - (percent / 100) * (chartHeight - 40)}
-                            x2="150"
-                            y2={chartHeight - (percent / 100) * (chartHeight - 40)}
-                            stroke="#f1f5f9"
-                            strokeWidth="0.2"
-                        />
-                    ))}
+                    {[0, 25, 50, 75, 100].map((percent) => {
+                        const yPos = chartHeight - (percent / 100) * (chartHeight - paddingTop);
+                        return (
+                            <g key={`grid-${percent}`}>
+                                <line
+                                    x1={paddingLeft}
+                                    y1={yPos}
+                                    x2={chartWidth - paddingRight}
+                                    y2={yPos}
+                                    stroke="#f1f5f9"
+                                    strokeWidth="1"
+                                />
+                                <text
+                                    x={paddingLeft - 10}
+                                    y={yPos + 4}
+                                    fontSize="10"
+                                    fill="#94a3b8"
+                                    textAnchor="end"
+                                >
+                                    {((percent / 100) * maxValue).toFixed(0)}
+                                </text>
+                            </g>
+                        );
+                    })}
 
-                    {/* Y-axis */}
-                    <line x1="60" y1="10" x2="60" y2={chartHeight} stroke="#cbd5e1" strokeWidth="0.5" />
-
-                    {/* X-axis */}
-                    <line x1="60" y1={chartHeight} x2="150" y2={chartHeight} stroke="#cbd5e1" strokeWidth="0.5" />
+                    {/* Axis */}
+                    <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={chartHeight} stroke="#cbd5e1" strokeWidth="1" />
+                    <line x1={paddingLeft} y1={chartHeight} x2={chartWidth - paddingRight} y2={chartHeight} stroke="#cbd5e1" strokeWidth="1" />
 
                     {/* Stock Out line (red) */}
                     <polyline
                         points={pointsOut}
                         stroke="#EF4444"
-                        strokeWidth="1"
+                        strokeWidth="2"
                         fill="none"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
                     />
 
                     {/* Stock In line (green) */}
                     <polyline
                         points={pointsIn}
                         stroke="#10B981"
-                        strokeWidth="1"
+                        strokeWidth="2"
                         fill="none"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
                     />
 
-                    {/* Data points for Stock In */}
+                    {/* Data points */}
                     {data.map((d, i) => {
-                        const x = 60 + (i / (data.length - 1 || 1)) * 90;
-                        const y = chartHeight - ((d.stock_in || 0) / maxValue) * (chartHeight - 40);
+                        const x = paddingLeft + (i / (data.length - 1 || 1)) * contentWidth;
+                        const yIn = chartHeight - ((d.stock_in || 0) / maxValue) * (chartHeight - paddingTop);
+                        const yOut = chartHeight - ((d.stock_out || 0) / maxValue) * (chartHeight - paddingTop);
                         return (
-                            <circle
-                                key={`in-${i}`}
-                                cx={x}
-                                cy={y}
-                                r="0.8"
-                                fill="#10B981"
-                                stroke="white"
-                                strokeWidth="0.2"
-                            />
-                        );
-                    })}
-
-                    {/* Data points for Stock Out */}
-                    {data.map((d, i) => {
-                        const x = 60 + (i / (data.length - 1 || 1)) * 90;
-                        const y = chartHeight - ((d.stock_out || 0) / maxValue) * (chartHeight - 40);
-                        return (
-                            <circle
-                                key={`out-${i}`}
-                                cx={x}
-                                cy={y}
-                                r="0.8"
-                                fill="#EF4444"
-                                stroke="white"
-                                strokeWidth="0.2"
-                            />
+                            <g key={`points-${i}`}>
+                                <circle cx={x} cy={yIn} r="3" fill="#10B981" stroke="white" strokeWidth="1.5" />
+                                <circle cx={x} cy={yOut} r="3" fill="#EF4444" stroke="white" strokeWidth="1.5" />
+                                <text x={x} y={chartHeight + 20} fontSize="10" fill="#64748b" textAnchor="middle">
+                                    {d.date}
+                                </text>
+                            </g>
                         );
                     })}
                 </svg>

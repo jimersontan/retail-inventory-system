@@ -228,7 +228,7 @@ const CheckoutModal = ({ isOpen, onClose, product }) => {
 
                         <div>
                             <h5 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Payment Method</h5>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 <button 
                                     onClick={() => setPaymentMethod('cash')}
                                     className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${paymentMethod === 'cash' ? 'border-indigo-500 bg-indigo-50' : 'border-slate-100 bg-white'}`}
@@ -242,13 +242,6 @@ const CheckoutModal = ({ isOpen, onClose, product }) => {
                                 >
                                     <Wallet className={`w-5 h-5 ${paymentMethod === 'gcash' ? 'text-indigo-600' : 'text-slate-400'}`} />
                                     <span className="text-[10px] font-bold">GCash</span>
-                                </button>
-                                <button 
-                                    onClick={() => setPaymentMethod('card')}
-                                    className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${paymentMethod === 'card' ? 'border-indigo-500 bg-indigo-50' : 'border-slate-100 bg-white'}`}
-                                >
-                                    <CreditCard className={`w-5 h-5 ${paymentMethod === 'card' ? 'text-indigo-600' : 'text-slate-400'}`} />
-                                    <span className="text-[10px] font-bold">Card</span>
                                 </button>
                             </div>
                         </div>
