@@ -94,8 +94,7 @@ class PurchaseOrderController extends Controller
                 ]);
             }
 
-            $po->total_amount = $total;
-            $po->save();
+            $po->update(['total_amount' => $total]);
 
             return $po;
         });
@@ -147,8 +146,7 @@ class PurchaseOrderController extends Controller
                 ]);
             }
 
-            $order->total_amount = $total;
-            $order->save();
+            $order->update(['total_amount' => $total]);
         });
 
         $order->load(['supplier.user', 'branch', 'createdBy', 'details.product']);

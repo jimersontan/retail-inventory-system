@@ -21,13 +21,13 @@ class ReportController extends Controller
         try {
             // Unified data source for revenue and transactions
             $posSource = DB::table('sales')
-                ->selectRaw('total_amount, branch_id, sale_date as date, COALESCE(payment_method, "cash") as method')
+                ->selectRaw("total_amount, branch_id, sale_date as date, COALESCE(payment_method, 'cash') as method")
                 ->whereBetween('sale_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId));
 
             $orderSource = DB::table('orders')
                 ->leftJoin('payments', 'orders.order_id', '=', 'payments.order_id')
-                ->selectRaw('orders.total_amount, orders.branch_id, orders.order_date as date, COALESCE(payments.payment_method, "cash") as method')
+                ->selectRaw("orders.total_amount, orders.branch_id, orders.order_date as date, COALESCE(payments.payment_method, 'cash') as method")
                 ->whereIn('orders.status', ['completed', 'delivered'])
                 ->whereBetween('orders.order_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('orders.branch_id', $userBranchId));
@@ -72,9 +72,9 @@ class ReportController extends Controller
             $byDay = DB::query()
                 ->fromSub($unified, 'u')
                 ->selectRaw('DATE(u.date) as date, COUNT(*) as transactions, SUM(u.total_amount) as revenue')
-                ->selectRaw('SUM(CASE WHEN method = "cash" THEN total_amount ELSE 0 END) as cash_amount')
-                ->selectRaw('SUM(CASE WHEN method = "card" THEN total_amount ELSE 0 END) as card_amount')
-                ->selectRaw('SUM(CASE WHEN method = "gcash" THEN total_amount ELSE 0 END) as gcash_amount')
+                ->selectRaw("SUM(CASE WHEN method = 'cash' THEN total_amount ELSE 0 END) as cash_amount")
+                ->selectRaw("SUM(CASE WHEN method = 'card' THEN total_amount ELSE 0 END) as card_amount")
+                ->selectRaw("SUM(CASE WHEN method = 'gcash' THEN total_amount ELSE 0 END) as gcash_amount")
                 ->groupBy(DB::raw('DATE(u.date)'))
                 ->orderBy('date')
                 ->paginate(20);
@@ -171,7 +171,8 @@ class ReportController extends Controller
                 ->orderBy('products.name')
                 ->paginate(20);
 
-            $fullList->getCollection()->transform(function($item) {
+            /** @var \Illuminate\Pagination\LengthAwarePaginator $fullList */
+            $fullList->through(function($item) {
                 $fillPercent = $item->max_stock > 0 ? ($item->quantity / $item->max_stock) * 100 : 0;
                 return (object)array_merge((array)$item, [
                     'fill_percent' => (int)$fillPercent,
@@ -209,10 +210,10 @@ class ReportController extends Controller
                     ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
                     ->count(),
                 
-                'total_amount' => DB::table('purchase_orders')
+                'total_amount' => round(DB::table('purchase_orders')
                     ->whereBetween('order_date', [$from, $to])
                     ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
-                    ->sum('total_amount') ?? 0,
+                    ->sum('total_amount'), 2) ?? 0,
                 
                 'pending_pos' => DB::table('purchase_orders')
                     ->where('status', 'pending')
@@ -264,7 +265,8 @@ class ReportController extends Controller
                 ->orderByDesc('order_date')
                 ->paginate(15);
 
-            $poList->getCollection()->transform(function($item) {
+            /** @var \Illuminate\Pagination\LengthAwarePaginator $poList */
+            $poList->through(function($item) {
                 $itemCount = DB::table('purchase_order_details')
                     ->where('po_id', $item->po_id)
                     ->count();
@@ -333,8 +335,8 @@ class ReportController extends Controller
             $overTime = DB::table('stock_movements')
                 ->join('inventory', 'stock_movements.inventory_id', '=', 'inventory.inventory_id')
                 ->selectRaw('DATE(stock_movements.movement_date) as date')
-                ->selectRaw('SUM(CASE WHEN stock_movements.reference_type IN ("purchase_order", "adjustment") THEN stock_movements.quantity ELSE 0 END) as stock_in')
-                ->selectRaw('SUM(CASE WHEN stock_movements.reference_type IN ("sale", "order") THEN stock_movements.quantity ELSE 0 END) as stock_out')
+                ->selectRaw("SUM(CASE WHEN stock_movements.reference_type IN ('purchase_order', 'adjustment') THEN stock_movements.quantity ELSE 0 END) as stock_in")
+                ->selectRaw("SUM(CASE WHEN stock_movements.reference_type IN ('sale', 'order') THEN stock_movements.quantity ELSE 0 END) as stock_out")
                 ->whereBetween('stock_movements.movement_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
                 ->groupBy(DB::raw('DATE(stock_movements.movement_date)'))
@@ -443,9 +445,9 @@ class ReportController extends Controller
             ->join('branches', 'sales.branch_id', '=', 'branches.branch_id')
             ->selectRaw('DATE(sales.sale_date) as date, branches.name')
             ->selectRaw('SUM(sales.total_amount) as revenue, COUNT(*) as count, AVG(sales.total_amount) as avg')
-            ->selectRaw('SUM(CASE WHEN sales.payment_method = "cash" THEN sales.total_amount ELSE 0 END) as cash')
-            ->selectRaw('SUM(CASE WHEN sales.payment_method = "card" THEN sales.total_amount ELSE 0 END) as card')
-            ->selectRaw('SUM(CASE WHEN sales.payment_method = "gcash" THEN sales.total_amount ELSE 0 END) as gcash')
+            ->selectRaw("SUM(CASE WHEN sales.payment_method = 'cash' THEN sales.total_amount ELSE 0 END) as cash")
+            ->selectRaw("SUM(CASE WHEN sales.payment_method = 'card' THEN sales.total_amount ELSE 0 END) as card")
+            ->selectRaw("SUM(CASE WHEN sales.payment_method = 'gcash' THEN sales.total_amount ELSE 0 END) as gcash")
             ->whereBetween('sales.sale_date', [$from, $to])
             ->when($userBranchId, fn($q) => $q->where('sales.branch_id', $userBranchId))
             ->groupBy('date', 'branches.branch_id', 'branches.name')
