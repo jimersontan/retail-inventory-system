@@ -161,19 +161,14 @@ class ReportController extends Controller
                 )
                 ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
                 ->orderBy('products.name')
-                ->paginate(20);
-
-            // Add status column using map on the items
-            $items = collect($fullList->items())->map(function($item) {
-                $fillPercent = $item->max_stock > 0 ? ($item->quantity / $item->max_stock) * 100 : 0;
-                return (object)array_merge((array)$item, [
-                    'fill_percent' => (int)$fillPercent,
-                    'status' => $item->quantity == 0 ? 'out_of_stock' : ($item->quantity <= 10 ? 'low_stock' : 'in_stock')
-                ]);
-            });
-
-            // Create a new paginator with the transformed items
-            $fullList->setCollection($items);
+                ->paginate(20)
+                ->through(function($item) {
+                    $fillPercent = $item->max_stock > 0 ? ($item->quantity / $item->max_stock) * 100 : 0;
+                    return (object)array_merge((array)$item, [
+                        'fill_percent' => (int)$fillPercent,
+                        'status' => $item->quantity == 0 ? 'out_of_stock' : ($item->quantity <= 10 ? 'low_stock' : 'in_stock')
+                    ]);
+                });
 
             return response()->json([
                 'status' => 'success',
@@ -258,18 +253,13 @@ class ReportController extends Controller
                 ->whereBetween('purchase_orders.order_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('purchase_orders.branch_id', $userBranchId))
                 ->orderByDesc('order_date')
-                ->paginate(15);
-
-            // Count items per PO using map on items
-            $items = collect($poList->items())->map(function($item) {
-                $itemCount = DB::table('purchase_order_details')
-                    ->where('po_id', $item->po_id)
-                    ->count();
-                return (object)array_merge((array)$item, ['item_count' => $itemCount]);
-            });
-
-            // Create a new paginator with the transformed items
-            $poList->setCollection($items);
+                ->paginate(15)
+                ->through(function($item) {
+                    $itemCount = DB::table('purchase_order_details')
+                        ->where('po_id', $item->po_id)
+                        ->count();
+                    return (object)array_merge((array)$item, ['item_count' => $itemCount]);
+                });
 
             return response()->json([
                 'status' => 'success',
