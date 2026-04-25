@@ -19,63 +19,71 @@ class ReportController extends Controller
         $to = $request->to ? Carbon::parse($request->to)->endOfDay() : Carbon::now();
 
         try {
+            // Unified data source for revenue and transactions
+            $posSource = DB::table('sales')
+                ->selectRaw('total_amount, branch_id, sale_date as date, COALESCE(payment_method, "cash") as method')
+                ->whereBetween('sale_date', [$from, $to])
+                ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId));
+
+            $orderSource = DB::table('orders')
+                ->leftJoin('payments', 'orders.order_id', '=', 'payments.order_id')
+                ->selectRaw('orders.total_amount, orders.branch_id, orders.order_date as date, COALESCE(payments.payment_method, "cash") as method')
+                ->whereIn('orders.status', ['completed', 'delivered'])
+                ->whereBetween('orders.order_date', [$from, $to])
+                ->when($userBranchId, fn($q) => $q->where('orders.branch_id', $userBranchId));
+
+            $unified = DB::query()->fromSub($posSource->unionAll($orderSource), 'u');
+
             // Summary cards
             $summary = [
-                'total_revenue' => DB::table('sales')
-                    ->whereBetween('sale_date', [$from, $to])
-                    ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
-                    ->sum('total_amount') ?? 0,
-                
-                'total_transactions' => DB::table('sales')
-                    ->whereBetween('sale_date', [$from, $to])
-                    ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
-                    ->count(),
-                
-                'avg_sale' => DB::table('sales')
-                    ->whereBetween('sale_date', [$from, $to])
-                    ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
-                    ->avg('total_amount') ?? 0,
-                
-                'total_items_sold' => DB::table('sale_details')
-                    ->join('sales', 'sale_details.sale_id', '=', 'sales.sale_id')
-                    ->whereBetween('sales.sale_date', [$from, $to])
-                    ->when($userBranchId, fn($q) => $q->where('sales.branch_id', $userBranchId))
-                    ->sum('sale_details.quantity') ?? 0,
+                'total_revenue' => round((float)$unified->sum('total_amount'), 2),
+                'total_transactions' => (int)$unified->count(),
+                'avg_sale' => round((float)($unified->avg('total_amount') ?? 0), 2),
+                'total_items_sold' => (int)(
+                    DB::table('sale_details')
+                        ->join('sales', 'sale_details.sale_id', '=', 'sales.sale_id')
+                        ->whereBetween('sales.sale_date', [$from, $to])
+                        ->when($userBranchId, fn($q) => $q->where('sales.branch_id', $userBranchId))
+                        ->sum('sale_details.quantity') +
+                    DB::table('order_items')
+                        ->join('orders', 'order_items.order_id', '=', 'orders.order_id')
+                        ->whereIn('orders.status', ['completed', 'delivered'])
+                        ->whereBetween('orders.order_date', [$from, $to])
+                        ->when($userBranchId, fn($q) => $q->where('orders.branch_id', $userBranchId))
+                        ->sum('order_items.quantity')
+                ),
             ];
 
-            // Sales by branch (BarChart data)
-            $byBranch = DB::table('sales')
-                ->join('branches', 'sales.branch_id', '=', 'branches.branch_id')
-                ->selectRaw('branches.name, SUM(sales.total_amount) as revenue, COUNT(*) as count')
-                ->whereBetween('sales.sale_date', [$from, $to])
-                ->when($userBranchId, fn($q) => $q->where('sales.branch_id', $userBranchId))
+            // Sales by branch
+            $byBranch = DB::query()
+                ->fromSub($unified, 'u')
+                ->join('branches', 'u.branch_id', '=', 'branches.branch_id')
+                ->selectRaw('branches.name as branch, SUM(u.total_amount) as revenue, COUNT(*) as count')
                 ->groupBy('branches.branch_id', 'branches.name')
                 ->orderByDesc('revenue')
                 ->get()
                 ->map(fn($item) => [
-                    'branch' => $item->name,
+                    'branch' => $item->branch,
                     'revenue' => (float)$item->revenue,
                     'count' => (int)$item->count
                 ]);
 
-            // Daily breakdown (table data)
-            $byDay = DB::table('sales')
-                ->selectRaw('DATE(sale_date) as date, COUNT(*) as transactions, SUM(total_amount) as revenue')
-                ->selectRaw('SUM(CASE WHEN COALESCE(payment_method, "cash") = "cash" THEN total_amount ELSE 0 END) as cash_amount')
-                ->selectRaw('SUM(CASE WHEN payment_method = "card" THEN total_amount ELSE 0 END) as card_amount')
-                ->selectRaw('SUM(CASE WHEN payment_method = "gcash" THEN total_amount ELSE 0 END) as gcash_amount')
-                ->whereBetween('sale_date', [$from, $to])
-                ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
-                ->groupBy(DB::raw('DATE(sale_date)'))
+            // Daily breakdown
+            $byDay = DB::query()
+                ->fromSub($unified, 'u')
+                ->selectRaw('DATE(u.date) as date, COUNT(*) as transactions, SUM(u.total_amount) as revenue')
+                ->selectRaw('SUM(CASE WHEN method = "cash" THEN total_amount ELSE 0 END) as cash_amount')
+                ->selectRaw('SUM(CASE WHEN method = "card" THEN total_amount ELSE 0 END) as card_amount')
+                ->selectRaw('SUM(CASE WHEN method = "gcash" THEN total_amount ELSE 0 END) as gcash_amount')
+                ->groupBy(DB::raw('DATE(u.date)'))
                 ->orderBy('date')
                 ->paginate(20);
 
-            // Payment methods breakdown (PieChart)
-            $byPayment = DB::table('sales')
-                ->selectRaw('COALESCE(payment_method, "cash") as method, SUM(total_amount) as amount, COUNT(*) as count')
-                ->whereBetween('sale_date', [$from, $to])
-                ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
-                ->groupBy(DB::raw('COALESCE(payment_method, "cash")'))
+            // Payment methods breakdown
+            $byPayment = DB::query()
+                ->fromSub($unified, 'u')
+                ->selectRaw('method, SUM(total_amount) as amount, COUNT(*) as count')
+                ->groupBy('method')
                 ->get()
                 ->map(function($item) {
                     $colors = ['cash' => '#10B981', 'card' => '#4F46E5', 'gcash' => '#F59E0B'];

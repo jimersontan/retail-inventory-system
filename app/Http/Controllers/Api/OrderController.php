@@ -309,6 +309,8 @@ class OrderController extends Controller
         // Update payment
         $order->payment()->update([
             'status' => 'paid',
+            'payment_method' => $validated['method'],
+            'transaction_ref' => $validated['reference_number'] ?? null,
             'payment_date' => now(),
         ]);
 
