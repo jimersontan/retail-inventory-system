@@ -169,14 +169,15 @@ class ReportController extends Controller
                 )
                 ->when($userBranchId, fn($q) => $q->where('inventory.branch_id', $userBranchId))
                 ->orderBy('products.name')
-                ->paginate(20)
-                ->through(function($item) {
-                    $fillPercent = $item->max_stock > 0 ? ($item->quantity / $item->max_stock) * 100 : 0;
-                    return (object)array_merge((array)$item, [
-                        'fill_percent' => (int)$fillPercent,
-                        'status' => $item->quantity == 0 ? 'out_of_stock' : ($item->quantity <= 10 ? 'low_stock' : 'in_stock')
-                    ]);
-                });
+                ->paginate(20);
+
+            $fullList->getCollection()->transform(function($item) {
+                $fillPercent = $item->max_stock > 0 ? ($item->quantity / $item->max_stock) * 100 : 0;
+                return (object)array_merge((array)$item, [
+                    'fill_percent' => (int)$fillPercent,
+                    'status' => $item->quantity == 0 ? 'out_of_stock' : ($item->quantity <= 10 ? 'low_stock' : 'in_stock')
+                ]);
+            });
 
             return response()->json([
                 'status' => 'success',
@@ -261,13 +262,14 @@ class ReportController extends Controller
                 ->whereBetween('purchase_orders.order_date', [$from, $to])
                 ->when($userBranchId, fn($q) => $q->where('purchase_orders.branch_id', $userBranchId))
                 ->orderByDesc('order_date')
-                ->paginate(15)
-                ->through(function($item) {
-                    $itemCount = DB::table('purchase_order_details')
-                        ->where('po_id', $item->po_id)
-                        ->count();
-                    return (object)array_merge((array)$item, ['item_count' => $itemCount]);
-                });
+                ->paginate(15);
+
+            $poList->getCollection()->transform(function($item) {
+                $itemCount = DB::table('purchase_order_details')
+                    ->where('po_id', $item->po_id)
+                    ->count();
+                return (object)array_merge((array)$item, ['item_count' => $itemCount]);
+            });
 
             return response()->json([
                 'status' => 'success',
