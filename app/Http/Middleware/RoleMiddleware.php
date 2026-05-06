@@ -21,9 +21,13 @@ class RoleMiddleware
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        $userType = auth()->user()->user_type;
+        // Case-insensitive match so DB values like "Admin" still align with route middleware "admin"
+        $userType = strtolower((string) auth()->user()->user_type);
+        $normalizedRoles = array_map(function ($role) {
+            return strtolower((string) $role);
+        }, $roles);
 
-        if (!in_array($userType, $roles)) {
+        if (!in_array($userType, $normalizedRoles, true)) {
             return response()->json([
                 'message' => 'Forbidden. Required role: ' . implode(' or ', $roles)
             ], 403);

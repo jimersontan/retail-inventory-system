@@ -11,7 +11,7 @@ export default defineConfig({
         react(),
     ],
     server: {
-        host: '127.0.0.1', // Ensures bindings limits variables Arrays map bounds mappings
+        host: '127.0.0.1',
         cors: true,
     }
 });
